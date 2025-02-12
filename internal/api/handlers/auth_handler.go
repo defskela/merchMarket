@@ -56,7 +56,8 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 	err := h.db.Where("username = ?", req.Username).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			var hash []byte
+			hash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при генерации хеша"})
 				return

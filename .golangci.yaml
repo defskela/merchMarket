@@ -1,0 +1,20 @@
+# .golangci.yaml
+
+run:
+    timeout: 5m
+    tests: true
+
+linters:
+    disable-all: true
+    enable:
+        - govet # Анализирует потенциальные ошибки
+        - errcheck # Проверяет, что ошибки возвращаются и обрабатываются
+        - staticcheck # Предоставляет расширенный анализ кода
+        - gosimple # Выявляет упрощения кода
+        - unused # Находит неиспользуемые переменные, функции и т.д.
+
+issues:
+    max-issues-per-linter: 0
+    max-same-issues: 0
+    exclude:
+        - 'error return value not checked'
