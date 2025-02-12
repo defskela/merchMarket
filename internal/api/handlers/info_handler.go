@@ -33,6 +33,14 @@ type InfoResponse struct {
 	CoinHistory map[string][]CoinHistoryEntry `json:"coinHistory"` // история транзакций с монетами (ключи: received, sent)
 }
 
+// @Summary      Информация о пользователе
+// @Description  Возвращает баланс монет, инвентарь и список транзакций.
+// @Tags         Info
+// @Produce      json
+// @Success      200 {object} InfoResponse
+// @Failure      401,500 {object} map[string]interface{}
+// @Router       /info [get]
+// @Security     BearerAuth
 func (h *InfoHandler) GetInfo(c *gin.Context) {
 	// Получаем имя пользователя из контекста (установлено middleware)
 	usernameI, exists := c.Get("username")

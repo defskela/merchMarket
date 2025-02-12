@@ -2,6 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 
 	"github.com/defskela/merchmarket/internal/api/handlers"
@@ -9,6 +11,8 @@ import (
 )
 
 func SetupRoutes(router *gin.Engine, db *gorm.DB) {
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	// Публичный эндпоинт для аутентификации
 	authHandler := handlers.NewAuthHandler(db)
 	router.POST("/api/auth", authHandler.Authenticate)

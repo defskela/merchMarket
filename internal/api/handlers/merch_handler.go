@@ -16,6 +16,15 @@ func NewMerchHandler(db *gorm.DB) *MerchHandler {
 	return &MerchHandler{db: db}
 }
 
+// @Summary      Покупка мерча
+// @Description  Списывает монеты и добавляет предмет в инвентарь.
+// @Tags         Merch
+// @Produce      json
+// @Param        item path string true "Название товара"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,404,500 {object} map[string]interface{}
+// @Router       /buy/{item} [get]
+// @Security     BearerAuth
 func (h *MerchHandler) BuyItem(c *gin.Context) {
 	item := c.Param("item")
 	if item == "" {

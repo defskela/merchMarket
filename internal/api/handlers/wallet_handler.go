@@ -21,6 +21,16 @@ type SendCoinRequest struct {
 	Amount int    `json:"amount" binding:"required"`
 }
 
+// @Summary      Отправка монет
+// @Description  Передаёт монеты от авторизованного пользователя другому.
+// @Tags         Wallet
+// @Accept       json
+// @Produce      json
+// @Param        sendCoin body SendCoinRequest true "Данные отправки монет"
+// @Success      200 {object} map[string]interface{}
+// @Failure      400,401,404,500 {object} map[string]interface{}
+// @Router       /sendCoin [post]
+// @Security     BearerAuth
 func (h *WalletHandler) SendCoin(c *gin.Context) {
 	var req SendCoinRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
