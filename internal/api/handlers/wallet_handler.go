@@ -21,38 +21,44 @@ type SendCoinRequest struct {
 	Amount int    `json:"amount" binding:"required"`
 }
 
-// @Summary      Отправка монет
+// @Summary      Отправить монеты другому пользователю.
 // @Description  Передаёт монеты от авторизованного пользователя другому.
 // @Tags         Wallet
 // @Accept       json
 // @Produce      json
 // @Param        sendCoin body SendCoinRequest true "Данные отправки монет"
-// @Success      200 {object} map[string]interface{}
-// @Failure      400,401,404,500 {object} map[string]interface{}
+// @Success      200 {object} "Успешный ответ."
+// @Failure      400 {object} ErrorResponse "Неверный запрос."
+// @Failure      401 {object} ErrorResponse "Неавторизован."
+// @Failure      500 {object} ErrorResponse "Внутренняя ошибка сервера."
 // @Router       /sendCoin [post]
 // @Security     BearerAuth
 func (h *WalletHandler) SendCoin(c *gin.Context) {
 	var req SendCoinRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Неверный запрос"})
+		resp := ErrorResponse{Error: "Неверный запрос"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	// Получаем имя отправителя из JWT
 	senderNameI, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Пользователь не авторизован"})
+		resp := ErrorResponse{Error: "Пользователь не авторизован"}
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 	senderName, ok := senderNameI.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Ошибка авторизации"})
+		resp := ErrorResponse{Error: "Ошибка авторизации"}
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
 	// Проверяем, что сумма перевода положительная
 	if req.Amount <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Сумма перевода должна быть положительной"})
+		resp := ErrorResponse{Error: "Сумма перевода должна быть положительной"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
@@ -63,14 +69,16 @@ func (h *WalletHandler) SendCoin(c *gin.Context) {
 	var sender models.User
 	if err := tx.Where("username = ?", senderName).First(&sender).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при получении отправителя"})
+		resp := ErrorResponse{Error: "Ошибка при получении отправителя"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	// Проверяем баланс
 	if sender.Coins < req.Amount {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Недостаточно средств"})
+		resp := ErrorResponse{Error: "Недостаточно средств"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
@@ -78,19 +86,22 @@ func (h *WalletHandler) SendCoin(c *gin.Context) {
 	var receiver models.User
 	if err := tx.Where("username = ?", req.ToUser).First(&receiver).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusNotFound, gin.H{"errors": "Получатель не найден"})
+		resp := ErrorResponse{Error: "Получатель не найден"}
+		c.JSON(http.StatusNotFound, resp)
 		return
 	}
 
 	// Обновляем балансы
 	if err := tx.Model(&sender).Update("coins", sender.Coins-req.Amount).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при обновлении баланса отправителя"})
+		resp := ErrorResponse{Error: "Ошибка при обновлении баланса отправителя"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	if err := tx.Model(&receiver).Update("coins", receiver.Coins+req.Amount).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при обновлении баланса получателя"})
+		resp := ErrorResponse{Error: "Ошибка при обновлении баланса получателя"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
@@ -102,15 +113,17 @@ func (h *WalletHandler) SendCoin(c *gin.Context) {
 	}
 	if err := tx.Create(&transaction).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при создании записи транзакции"})
+		resp := ErrorResponse{Error: "Ошибка при создании записи транзакции"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	// Фиксируем транзакцию
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при сохранении транзакции"})
+		resp := ErrorResponse{Error: "Ошибка при сохранении транзакции"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Монеты успешно отправлены"})
+	c.JSON(http.StatusOK, gin.H{"message": "Монетки успешно отправлены"})
 }

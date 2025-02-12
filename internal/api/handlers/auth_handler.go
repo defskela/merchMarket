@@ -33,14 +33,16 @@ type AuthResponse struct {
 
 var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
-// @Summary      Авторизация
+// @Summary      Аутентификация и получение JWT-токена.
 // @Description  Регистрирует нового пользователя или авторизует существующего. Возвращает JWT-токен.
 // @Tags         Auth
 // @Accept       json
 // @Produce      json
-// @Param        auth body AuthRequest true "Логин и пароль"
-// @Success      200 {object} AuthResponse
-// @Failure      400,401,500 {object} map[string]interface{}
+// @Param        body body AuthRequest true "Логин и пароль"
+// @Success      200 {object} AuthResponse "Успешная аутентификация."
+// @Failure      400 {object} ErrorResponse "Неверный запрос."
+// @Failure      401 {object} ErrorResponse "Неавторизован."
+// @Failure      500 {object} ErrorResponse "Внутренняя ошибка сервера."
 // @Router       /auth [post]
 // @Security     BearerAuth
 func (h *AuthHandler) Authenticate(c *gin.Context) {

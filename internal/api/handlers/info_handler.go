@@ -16,9 +16,20 @@ func NewInfoHandler(db *gorm.DB) *InfoHandler {
 	return &InfoHandler{db: db}
 }
 
+type InfoResponse struct {
+	Coins       int             `json:"coins"`
+	Inventory   []InventoryItem `json:"inventory"`
+	CoinHistory CoinHistory     `json:"coinHistory"`
+}
+
 type InventoryItem struct {
-	Type     string `json:"type"`     // предмет
-	Quantity int    `json:"quantity"` // количество предметов
+	Type     string `json:"type"`
+	Quantity int    `json:"quantity"`
+}
+
+type CoinHistory struct {
+	Received []CoinHistoryEntry `json:"received"`
+	Sent     []CoinHistoryEntry `json:"sent"`
 }
 
 type CoinHistoryEntry struct {
@@ -27,37 +38,40 @@ type CoinHistoryEntry struct {
 	Amount   int    `json:"amount"`
 }
 
-type InfoResponse struct {
-	Coins       int                           `json:"coins"`       // количество монет
-	Inventory   []InventoryItem               `json:"inventory"`   // инвентарь
-	CoinHistory map[string][]CoinHistoryEntry `json:"coinHistory"` // история транзакций с монетами (ключи: received, sent)
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
-// @Summary      Информация о пользователе
+// @Summary      Получить информацию о монетах, инвентаре и истории транзакций.
 // @Description  Возвращает баланс монет, инвентарь и список транзакций.
 // @Tags         Info
 // @Produce      json
-// @Success      200 {object} InfoResponse
-// @Failure      401,500 {object} map[string]interface{}
+// @Success      200 {object} InfoResponse "Успешный ответ."
+// @Failure      400 {object} ErrorResponse "Неверный запрос."
+// @Failure      401 {object} ErrorResponse "Неавторизован."
+// @Failure      500 {object} ErrorResponse "Внутренняя ошибка сервера."
 // @Router       /info [get]
 // @Security     BearerAuth
 func (h *InfoHandler) GetInfo(c *gin.Context) {
 	// Получаем имя пользователя из контекста (установлено middleware)
 	usernameI, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Пользователь не авторизован"})
+		resp := ErrorResponse{Error: "Пользователь не авторизован"}
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 	username, ok := usernameI.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Неверные данные авторизации"})
+		resp := ErrorResponse{Error: "Пользователь не авторизован"}
+		c.JSON(http.StatusUnauthorized, gin.H{"errors": resp})
 		return
 	}
 
 	// Извлекаем пользователя из БД с покупками и товарами
 	var user models.User
 	if err := h.db.Preload("Purchases.Merch").Where("username = ?", username).First(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось найти пользователя"})
+		resp := ErrorResponse{Error: "Не удалось найти пользователя"}
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": resp})
 		return
 	}
 
@@ -79,23 +93,28 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 	var receivedTxs []models.Transaction
 
 	if err := h.db.Where("from_user_id = ?", user.ID).Find(&sentTxs).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось получить отправленные транзакции"})
+		resp := ErrorResponse{Error: "Не удалось получить отправленные транзакции"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	if err := h.db.Where("to_user_id = ?", user.ID).Find(&receivedTxs).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось получить полученные транзакции"})
+		resp := ErrorResponse{Error: "Не удалось получить полученные транзакции"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	// Формируем историю транзакций
-	coinHistory := make(map[string][]CoinHistoryEntry)
+	coinHistory := CoinHistory{
+		Received: []CoinHistoryEntry{},
+		Sent:     []CoinHistoryEntry{},
+	}
 
 	for _, tx := range sentTxs {
 		var toUser models.User
 		if err := h.db.First(&toUser, tx.ToUserID).Error; err != nil {
 			continue
 		}
-		coinHistory["sent"] = append(coinHistory["sent"], CoinHistoryEntry{
+		coinHistory.Sent = append(coinHistory.Sent, CoinHistoryEntry{
 			ToUser: toUser.Username,
 			Amount: tx.Amount,
 		})
@@ -106,7 +125,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 		if err := h.db.First(&fromUser, tx.FromUserID).Error; err != nil {
 			continue
 		}
-		coinHistory["received"] = append(coinHistory["received"], CoinHistoryEntry{
+		coinHistory.Received = append(coinHistory.Received, CoinHistoryEntry{
 			FromUser: fromUser.Username,
 			Amount:   tx.Amount,
 		})

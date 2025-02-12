@@ -16,38 +16,44 @@ func NewMerchHandler(db *gorm.DB) *MerchHandler {
 	return &MerchHandler{db: db}
 }
 
-// @Summary      Покупка мерча
+// @Summary      Купить предмет за монеты.
 // @Description  Списывает монеты и добавляет предмет в инвентарь.
 // @Tags         Merch
 // @Produce      json
 // @Param        item path string true "Название товара"
-// @Success      200 {object} map[string]interface{}
-// @Failure      400,401,404,500 {object} map[string]interface{}
+// @Success      200 {object} "Успешный ответ."
+// @Failure      400 {object} ErrorResponse "Неверный запрос."
+// @Failure      401 {object} ErrorResponse "Неавторизован."
+// @Failure      500 {object} ErrorResponse "Внутренняя ошибка сервера."
 // @Router       /buy/{item} [get]
 // @Security     BearerAuth
 func (h *MerchHandler) BuyItem(c *gin.Context) {
 	item := c.Param("item")
 	if item == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Не указан предмет для покупки"})
+		resp := ErrorResponse{Error: "Не указан предмет для покупки"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	// Получаем имя пользователя из JWT
 	usernameI, exists := c.Get("username")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Пользователь не авторизован"})
+		resp := ErrorResponse{Error: "Пользователь не авторизован"}
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 	username, ok := usernameI.(string)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": "Ошибка авторизации"})
+		resp := ErrorResponse{Error: "Ошибка авторизации"}
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
 	// Получаем информацию о товаре
 	var merch models.Merch
 	if err := h.db.Where("name = ?", item).First(&merch).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"errors": "Товар не найден"})
+		resp := ErrorResponse{Error: "Товар не найден"}
+		c.JSON(http.StatusNotFound, resp)
 		return
 	}
 
@@ -58,21 +64,24 @@ func (h *MerchHandler) BuyItem(c *gin.Context) {
 	var user models.User
 	if err := tx.Where("username = ?", username).First(&user).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при получении пользователя"})
+		resp := ErrorResponse{Error: "Пользователь не найден"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	// Проверяем баланс
 	if user.Coins < merch.Price {
 		tx.Rollback()
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Недостаточно средств"})
+		resp := ErrorResponse{Error: "Недостаточно средств"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	// Обновляем баланс пользователя
 	if err := tx.Model(&user).Update("coins", user.Coins-merch.Price).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при списании монет"})
+		resp := ErrorResponse{Error: "Ошибка при списании монет"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
@@ -83,13 +92,15 @@ func (h *MerchHandler) BuyItem(c *gin.Context) {
 	}
 	if err := tx.Create(&purchase).Error; err != nil {
 		tx.Rollback()
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при создании записи покупки"})
+		resp := ErrorResponse{Error: "Ошибка при создании записи покупки"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	// Фиксируем транзакцию
 	if err := tx.Commit().Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при сохранении данных"})
+		resp := ErrorResponse{Error: "Ошибка при сохранении данных"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 

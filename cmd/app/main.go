@@ -13,8 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// @title Merch Market API
-// @version 1.0
+// @title API Avito shop
+// @version 1.0.0
 // @description API для отбора на Стажировку в Авито
 // @host localhost:8080
 // @BasePath /api
