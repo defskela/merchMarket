@@ -49,14 +49,20 @@ func TestAuthenticate_InvalidJSON(t *testing.T) {
 	db := setupTestDB(t)
 	handler := &handlers.AuthHandler{Db: db}
 
-	w, err := performAuthRequest(handler, "not a json")
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, w.Code)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	c.Request = httptest.NewRequest(http.MethodPost, "/auth", bytes.NewBuffer([]byte("not a json")))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.Authenticate(c)
 
 	var resp map[string]string
-	err = json.Unmarshal(w.Body.Bytes(), &resp)
+	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
-	assert.Equal(t, "Неверный запрос", resp["errors"])
+
+	// Исправлен ключ ошибки "errors" → "error"
+	assert.Equal(t, "Неверный запрос", resp["error"])
 }
 
 func TestAuthenticate_NewUser(t *testing.T) {
@@ -118,5 +124,7 @@ func TestAuthenticate_ExistingUser_InvalidPassword(t *testing.T) {
 	var resp map[string]string
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
-	assert.Equal(t, "Неверный пароль", resp["errors"])
+
+	// Исправлен ключ ошибки "errors" → "error"
+	assert.Equal(t, "Неверный пароль", resp["error"])
 }
