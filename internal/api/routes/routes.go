@@ -31,7 +31,7 @@ func SetupRoutes(router *gin.Engine, db *gorm.DB) {
 
 		// Покупка мерча – параметр item передаётся в пути
 		merchHandler := handlers.NewMerchHandler(db)
-		api.GET("/buy/:item", middlewares.ExtractItemMiddleware(), merchHandler.BuyItem)
+		api.GET("/buy/:item", merchHandler.BuyItem)
 
 	}
 }
