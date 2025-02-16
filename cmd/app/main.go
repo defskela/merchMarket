@@ -7,6 +7,7 @@ import (
 
 	_ "github.com/defskela/merchmarket/docs"
 	"github.com/defskela/merchmarket/internal/api/routes"
+	"github.com/defskela/merchmarket/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -38,18 +39,19 @@ func initDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	// db.Migrator().CreateTable(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
-	// db.AutoMigrate(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
-	// db.Create(&models.Merch{Name: "t-shirt", Price: 80})
-	// db.Create(&models.Merch{Name: "cup", Price: 20})
-	// db.Create(&models.Merch{Name: "book", Price: 50})
-	// db.Create(&models.Merch{Name: "pen", Price: 10})
-	// db.Create(&models.Merch{Name: "powerbank", Price: 200})
-	// db.Create(&models.Merch{Name: "hoody", Price: 300})
-	// db.Create(&models.Merch{Name: "umbrella", Price: 200})
-	// db.Create(&models.Merch{Name: "socks", Price: 10})
-	// db.Create(&models.Merch{Name: "wallet", Price: 50})
-	// db.Create(&models.Merch{Name: "pink-hoody", Price: 500})
+	// Лишь для того, чтобы при запуске контейнера с новой БД всё работало, как надо. В обычной жизни эти строки не нужны
+	db.Migrator().CreateTable(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
+	db.AutoMigrate(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
+	db.Create(&models.Merch{Name: "t-shirt", Price: 80})
+	db.Create(&models.Merch{Name: "cup", Price: 20})
+	db.Create(&models.Merch{Name: "book", Price: 50})
+	db.Create(&models.Merch{Name: "pen", Price: 10})
+	db.Create(&models.Merch{Name: "powerbank", Price: 200})
+	db.Create(&models.Merch{Name: "hoody", Price: 300})
+	db.Create(&models.Merch{Name: "umbrella", Price: 200})
+	db.Create(&models.Merch{Name: "socks", Price: 10})
+	db.Create(&models.Merch{Name: "wallet", Price: 50})
+	db.Create(&models.Merch{Name: "pink-hoody", Price: 500})
 	return db, nil
 }
 
