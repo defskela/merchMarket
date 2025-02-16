@@ -9,11 +9,11 @@ import (
 )
 
 type InfoHandler struct {
-	db *gorm.DB
+	Db *gorm.DB
 }
 
 func NewInfoHandler(db *gorm.DB) *InfoHandler {
-	return &InfoHandler{db: db}
+	return &InfoHandler{Db: db}
 }
 
 type InfoResponse struct {
@@ -69,7 +69,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 
 	// Извлекаем пользователя из БД с покупками и товарами
 	var user models.User
-	if err := h.db.Preload("Purchases.Merch").Where("username = ?", username).First(&user).Error; err != nil {
+	if err := h.Db.Preload("Purchases.Merch").Where("username = ?", username).First(&user).Error; err != nil {
 		resp := ErrorResponse{Error: "Не удалось найти пользователя"}
 		c.JSON(http.StatusInternalServerError, gin.H{"errors": resp})
 		return
@@ -92,12 +92,12 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 	var sentTxs []models.Transaction
 	var receivedTxs []models.Transaction
 
-	if err := h.db.Where("from_user_id = ?", user.ID).Find(&sentTxs).Error; err != nil {
+	if err := h.Db.Where("from_user_id = ?", user.ID).Find(&sentTxs).Error; err != nil {
 		resp := ErrorResponse{Error: "Не удалось получить отправленные транзакции"}
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	if err := h.db.Where("to_user_id = ?", user.ID).Find(&receivedTxs).Error; err != nil {
+	if err := h.Db.Where("to_user_id = ?", user.ID).Find(&receivedTxs).Error; err != nil {
 		resp := ErrorResponse{Error: "Не удалось получить полученные транзакции"}
 		c.JSON(http.StatusInternalServerError, resp)
 		return
@@ -111,7 +111,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 
 	for _, tx := range sentTxs {
 		var toUser models.User
-		if err := h.db.First(&toUser, tx.ToUserID).Error; err != nil {
+		if err := h.Db.First(&toUser, tx.ToUserID).Error; err != nil {
 			continue
 		}
 		coinHistory.Sent = append(coinHistory.Sent, CoinHistoryEntry{
@@ -122,7 +122,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 
 	for _, tx := range receivedTxs {
 		var fromUser models.User
-		if err := h.db.First(&fromUser, tx.FromUserID).Error; err != nil {
+		if err := h.Db.First(&fromUser, tx.FromUserID).Error; err != nil {
 			continue
 		}
 		coinHistory.Received = append(coinHistory.Received, CoinHistoryEntry{

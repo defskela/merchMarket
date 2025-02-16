@@ -1,4 +1,4 @@
-package handlers
+package test
 
 import (
 	"bytes"
@@ -7,12 +7,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/defskela/merchmarket/internal/api/handlers"
 	"github.com/defskela/merchmarket/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
-func performSendCoinRequest(handler *WalletHandler, requestBody interface{}, username interface{}) (*httptest.ResponseRecorder, error) {
+func performSendCoinRequest(handler *handlers.WalletHandler, requestBody interface{}, username interface{}) (*httptest.ResponseRecorder, error) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	var body []byte
@@ -34,7 +35,7 @@ func performSendCoinRequest(handler *WalletHandler, requestBody interface{}, use
 
 func TestSendCoin_InvalidJSON(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Передаём невалидный JSON (при маршалинге строка обернется в кавычки, но структура не соответствует SendCoinRequest)
 	w, err := performSendCoinRequest(handler, "not a json", "sender")
@@ -49,9 +50,9 @@ func TestSendCoin_InvalidJSON(t *testing.T) {
 
 func TestSendCoin_Unauthorized(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
-	reqBody := SendCoinRequest{ToUser: "receiver", Amount: 100}
+	reqBody := handlers.SendCoinRequest{ToUser: "receiver", Amount: 100}
 	// Не устанавливаем username в контексте
 	w, err := performSendCoinRequest(handler, reqBody, nil)
 	assert.NoError(t, err)
@@ -65,10 +66,10 @@ func TestSendCoin_Unauthorized(t *testing.T) {
 
 func TestSendCoin_InvalidAmount(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Сумма перевода отрицательная
-	reqBody := SendCoinRequest{ToUser: "receiver", Amount: -1}
+	reqBody := handlers.SendCoinRequest{ToUser: "receiver", Amount: -1}
 	w, err := performSendCoinRequest(handler, reqBody, "sender")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -81,14 +82,14 @@ func TestSendCoin_InvalidAmount(t *testing.T) {
 
 func TestSendCoin_SenderNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Создаём получателя, но не создаём отправителя
 	receiver := models.User{Username: "receiver", Coins: 100}
 	err := db.Create(&receiver).Error
 	assert.NoError(t, err)
 
-	reqBody := SendCoinRequest{ToUser: "receiver", Amount: 50}
+	reqBody := handlers.SendCoinRequest{ToUser: "receiver", Amount: 50}
 	// Отправитель с именем "nonexistentSender" отсутствует в БД
 	w, err := performSendCoinRequest(handler, reqBody, "nonexistentSender")
 	assert.NoError(t, err)
@@ -102,7 +103,7 @@ func TestSendCoin_SenderNotFound(t *testing.T) {
 
 func TestSendCoin_NotEnoughCoins(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Создаём отправителя с недостаточным балансом
 	sender := models.User{Username: "sender", Coins: 30}
@@ -114,7 +115,7 @@ func TestSendCoin_NotEnoughCoins(t *testing.T) {
 	err = db.Create(&receiver).Error
 	assert.NoError(t, err)
 
-	reqBody := SendCoinRequest{ToUser: "receiver", Amount: 50}
+	reqBody := handlers.SendCoinRequest{ToUser: "receiver", Amount: 50}
 	w, err := performSendCoinRequest(handler, reqBody, "sender")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -127,7 +128,7 @@ func TestSendCoin_NotEnoughCoins(t *testing.T) {
 
 func TestSendCoin_ReceiverNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Создаём отправителя с достаточным балансом
 	sender := models.User{Username: "sender", Coins: 100}
@@ -135,7 +136,7 @@ func TestSendCoin_ReceiverNotFound(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Получатель отсутствует в БД
-	reqBody := SendCoinRequest{ToUser: "nonexistentReceiver", Amount: 50}
+	reqBody := handlers.SendCoinRequest{ToUser: "nonexistentReceiver", Amount: 50}
 	w, err := performSendCoinRequest(handler, reqBody, "sender")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -148,7 +149,7 @@ func TestSendCoin_ReceiverNotFound(t *testing.T) {
 
 func TestSendCoin_Success(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewWalletHandler(db)
+	handler := handlers.NewWalletHandler(db)
 
 	// Создаём отправителя и получателя с начальным балансом
 	sender := models.User{Username: "sender", Coins: 100}
@@ -158,7 +159,7 @@ func TestSendCoin_Success(t *testing.T) {
 	err = db.Create(&receiver).Error
 	assert.NoError(t, err)
 
-	reqBody := SendCoinRequest{ToUser: "receiver", Amount: 50}
+	reqBody := handlers.SendCoinRequest{ToUser: "receiver", Amount: 50}
 	w, err := performSendCoinRequest(handler, reqBody, "sender")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)

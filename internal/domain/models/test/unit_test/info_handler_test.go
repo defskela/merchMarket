@@ -1,4 +1,4 @@
-package handlers
+package test
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/defskela/merchmarket/internal/api/handlers"
 	"github.com/defskela/merchmarket/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -13,12 +14,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func setupTestValues(t *testing.T) (*gorm.DB, *InfoHandler, *httptest.ResponseRecorder, *gin.Context) {
+func setupTestValues(t *testing.T) (*gorm.DB, *handlers.InfoHandler, *httptest.ResponseRecorder, *gin.Context) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
 	err = db.AutoMigrate(&models.User{}, &models.Purchase{}, &models.Merch{}, &models.Transaction{})
 	assert.NoError(t, err)
-	handler := &InfoHandler{db: db}
+	handler := &handlers.InfoHandler{Db: db}
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -35,7 +36,7 @@ func TestGetInfo_NoUsername(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
-	var resp ErrorResponse
+	var resp handlers.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.Equal(t, "Пользователь не авторизован", resp.Error)
@@ -53,7 +54,7 @@ func TestGetInfo_InvalidUsernameType(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
-	var response map[string]ErrorResponse
+	var response map[string]handlers.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	resp, exists := response["errors"]
@@ -71,7 +72,7 @@ func TestGetInfo_UserNotFound(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
-	var response map[string]ErrorResponse
+	var response map[string]handlers.ErrorResponse
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	resp, exists := response["errors"]
@@ -136,7 +137,7 @@ func TestGetInfo_HappyPath(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp InfoResponse
+	var resp handlers.InfoResponse
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 

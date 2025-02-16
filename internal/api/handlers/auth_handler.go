@@ -15,11 +15,11 @@ import (
 )
 
 type AuthHandler struct {
-	db *gorm.DB
+	Db *gorm.DB
 }
 
 func NewAuthHandler(db *gorm.DB) *AuthHandler {
-	return &AuthHandler{db: db}
+	return &AuthHandler{Db: db}
 }
 
 type AuthRequest struct {
@@ -53,7 +53,7 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 	}
 
 	var user models.User
-	err := h.db.Where("username = ?", req.Username).First(&user).Error
+	err := h.Db.Where("username = ?", req.Username).First(&user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			var hash []byte
@@ -67,7 +67,7 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 				Password: string(hash),
 				Coins:    1000,
 			}
-			if err := h.db.Create(&user).Error; err != nil {
+			if err := h.Db.Create(&user).Error; err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось создать пользователя"})
 				return
 			}

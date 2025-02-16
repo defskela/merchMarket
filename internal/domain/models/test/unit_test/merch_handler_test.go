@@ -1,4 +1,4 @@
-package handlers
+package test
 
 import (
 	"encoding/json"
@@ -6,12 +6,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/defskela/merchmarket/internal/api/handlers"
 	"github.com/defskela/merchmarket/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
-func performBuyItemRequest(handler *MerchHandler, item string, username interface{}) *httptest.ResponseRecorder {
+func performBuyItemRequest(handler *handlers.MerchHandler, item string, username interface{}) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 	c.Params = gin.Params{{Key: "item", Value: item}}
@@ -24,7 +25,7 @@ func performBuyItemRequest(handler *MerchHandler, item string, username interfac
 
 func TestBuyItem_MissingItem(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -41,7 +42,7 @@ func TestBuyItem_MissingItem(t *testing.T) {
 
 func TestBuyItem_Unauthorized(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 
 	// Передаём корректный параметр, но не устанавливаем "username"
 	w := performBuyItemRequest(handler, "cup", nil)
@@ -55,7 +56,7 @@ func TestBuyItem_Unauthorized(t *testing.T) {
 
 func TestBuyItem_ItemNotFound(t *testing.T) {
 	db := setupTestDB(t)
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 
 	// Пользователь авторизован, но товара "cup" нет в БД
 	w := performBuyItemRequest(handler, "cup", "testuser")
@@ -74,7 +75,7 @@ func TestBuyItem_UserNotFound(t *testing.T) {
 	err := db.Create(&merch).Error
 	assert.NoError(t, err)
 
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 	// Пытаемся купить товар от несуществующего пользователя
 	w := performBuyItemRequest(handler, "cup", "nonexistent")
 
@@ -96,7 +97,7 @@ func TestBuyItem_NotEnoughCoins(t *testing.T) {
 	err = db.Create(&user).Error
 	assert.NoError(t, err)
 
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 	w := performBuyItemRequest(handler, "cup", "testuser")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -116,7 +117,7 @@ func TestBuyItem_Success(t *testing.T) {
 	err = db.Create(&user).Error
 	assert.NoError(t, err)
 
-	handler := NewMerchHandler(db)
+	handler := handlers.NewMerchHandler(db)
 	w := performBuyItemRequest(handler, "cup", "testuser")
 
 	assert.Equal(t, http.StatusOK, w.Code)

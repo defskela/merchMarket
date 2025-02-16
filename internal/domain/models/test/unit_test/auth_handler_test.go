@@ -1,4 +1,4 @@
-package handlers
+package test
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/defskela/merchmarket/internal/api/handlers"
 	"github.com/defskela/merchmarket/internal/domain/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -24,7 +25,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func performAuthRequest(handler *AuthHandler, requestBody interface{}) (*httptest.ResponseRecorder, error) {
+func performAuthRequest(handler *handlers.AuthHandler, requestBody interface{}) (*httptest.ResponseRecorder, error) {
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -46,7 +47,7 @@ func performAuthRequest(handler *AuthHandler, requestBody interface{}) (*httptes
 
 func TestAuthenticate_InvalidJSON(t *testing.T) {
 	db := setupTestDB(t)
-	handler := &AuthHandler{db: db}
+	handler := &handlers.AuthHandler{Db: db}
 
 	w, err := performAuthRequest(handler, "not a json")
 	assert.NoError(t, err)
@@ -60,14 +61,14 @@ func TestAuthenticate_InvalidJSON(t *testing.T) {
 
 func TestAuthenticate_NewUser(t *testing.T) {
 	db := setupTestDB(t)
-	handler := &AuthHandler{db: db}
+	handler := &handlers.AuthHandler{Db: db}
 
-	reqBody := AuthRequest{Username: "newuser", Password: "password123"}
+	reqBody := handlers.AuthRequest{Username: "newuser", Password: "password123"}
 	w, err := performAuthRequest(handler, reqBody)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp AuthResponse
+	var resp handlers.AuthResponse
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp.Token)
@@ -82,19 +83,19 @@ func TestAuthenticate_NewUser(t *testing.T) {
 
 func TestAuthenticate_ExistingUser_ValidPassword(t *testing.T) {
 	db := setupTestDB(t)
-	handler := &AuthHandler{db: db}
+	handler := &handlers.AuthHandler{Db: db}
 
 	password := "password123"
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	user := models.User{Username: "existinguser", Password: string(hash), Coins: 1000}
 	db.Create(&user)
 
-	reqBody := AuthRequest{Username: "existinguser", Password: password}
+	reqBody := handlers.AuthRequest{Username: "existinguser", Password: password}
 	w, err := performAuthRequest(handler, reqBody)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	var resp AuthResponse
+	var resp handlers.AuthResponse
 	err = json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, resp.Token)
@@ -102,14 +103,14 @@ func TestAuthenticate_ExistingUser_ValidPassword(t *testing.T) {
 
 func TestAuthenticate_ExistingUser_InvalidPassword(t *testing.T) {
 	db := setupTestDB(t)
-	handler := &AuthHandler{db: db}
+	handler := &handlers.AuthHandler{Db: db}
 
 	password := "correctpassword"
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	user := models.User{Username: "existinguser", Password: string(hash), Coins: 1000}
 	db.Create(&user)
 
-	reqBody := AuthRequest{Username: "existinguser", Password: "wrongpassword"}
+	reqBody := handlers.AuthRequest{Username: "existinguser", Password: "wrongpassword"}
 	w, err := performAuthRequest(handler, reqBody)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
