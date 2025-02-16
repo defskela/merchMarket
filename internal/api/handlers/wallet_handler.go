@@ -91,6 +91,14 @@ func (h *WalletHandler) SendCoin(c *gin.Context) {
 		return
 	}
 
+	// Нельзя переводить самому себе
+	if sender.Username == receiver.Username {
+		tx.Rollback()
+		resp := ErrorResponse{Error: "Перевод самому себе не поддерживается"}
+		c.JSON(http.StatusNotFound, resp)
+		return
+	}
+
 	// Обновляем балансы
 	if err := tx.Model(&sender).Update("coins", sender.Coins-req.Amount).Error; err != nil {
 		tx.Rollback()
