@@ -32,11 +32,11 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Авторизация",
+                "summary": "Аутентификация и получение JWT-токена.",
                 "parameters": [
                     {
                         "description": "Логин и пароль",
-                        "name": "auth",
+                        "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -46,30 +46,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Успешная аутентификация.",
                         "schema": {
                             "$ref": "#/definitions/handlers.AuthResponse"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Неверный запрос.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -89,7 +86,7 @@ const docTemplate = `{
                 "tags": [
                     "Merch"
                 ],
-                "summary": "Покупка мерча",
+                "summary": "Купить предмет за монеты.",
                 "parameters": [
                     {
                         "type": "string",
@@ -101,38 +98,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Успешный ответ",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "null"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Неверный запрос.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -152,26 +138,30 @@ const docTemplate = `{
                 "tags": [
                     "Info"
                 ],
-                "summary": "Информация о пользователе",
+                "summary": "Получить информацию о монетах, инвентаре и истории транзакций.",
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Успешный ответ.",
                         "schema": {
                             "$ref": "#/definitions/handlers.InfoResponse"
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "400": {
+                        "description": "Неверный запрос.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован.",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -194,7 +184,7 @@ const docTemplate = `{
                 "tags": [
                     "Wallet"
                 ],
-                "summary": "Отправка монет",
+                "summary": "Отправить монеты другому пользователю.",
                 "parameters": [
                     {
                         "description": "Данные отправки монет",
@@ -208,38 +198,27 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Успешный ответ.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "null"
                         }
                     },
                     "400": {
-                        "description": "Bad Request",
+                        "description": "Неверный запрос.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера.",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -270,6 +249,23 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.CoinHistory": {
+            "type": "object",
+            "properties": {
+                "received": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CoinHistoryEntry"
+                    }
+                },
+                "sent": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handlers.CoinHistoryEntry"
+                    }
+                }
+            }
+        },
         "handlers.CoinHistoryEntry": {
             "type": "object",
             "properties": {
@@ -284,25 +280,24 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
         "handlers.InfoResponse": {
             "type": "object",
             "properties": {
                 "coinHistory": {
-                    "description": "история транзакций с монетами (ключи: received, sent)",
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/definitions/handlers.CoinHistoryEntry"
-                        }
-                    }
+                    "$ref": "#/definitions/handlers.CoinHistory"
                 },
                 "coins": {
-                    "description": "количество монет",
                     "type": "integer"
                 },
                 "inventory": {
-                    "description": "инвентарь",
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/handlers.InventoryItem"
@@ -314,11 +309,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "quantity": {
-                    "description": "количество предметов",
                     "type": "integer"
                 },
                 "type": {
-                    "description": "предмет",
                     "type": "string"
                 }
             }
@@ -351,11 +344,11 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "1.0.0",
 	Host:             "localhost:8080",
 	BasePath:         "/api",
 	Schemes:          []string{},
-	Title:            "Merch Market API",
+	Title:            "API Avito shop",
 	Description:      "API для отбора на Стажировку в Авито",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

@@ -48,7 +48,8 @@ var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 func (h *AuthHandler) Authenticate(c *gin.Context) {
 	var req AuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"errors": "Неверный запрос"})
+		resp := ErrorResponse{Error: "Неверный запрос"}
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
@@ -59,7 +60,8 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 			var hash []byte
 			hash, err = bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при генерации хеша"})
+				resp := ErrorResponse{Error: "Ошибка при генерации хеша"}
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 			user = models.User{
@@ -68,16 +70,20 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 				Coins:    1000,
 			}
 			if err := h.Db.Create(&user).Error; err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось создать пользователя"})
+				resp := ErrorResponse{Error: "Не удалось создать пользователя"}
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"errors": "Ошибка при поиске пользователя"})
+			// fmt.Println(err)
+			resp := ErrorResponse{Error: "Ошибка при поиске пользователя"}
+			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
 	} else {
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"errors": "Неверный пароль"})
+			resp := ErrorResponse{Error: "Неверный пароль"}
+			c.JSON(http.StatusUnauthorized, resp)
 			return
 		}
 	}
@@ -90,7 +96,8 @@ func (h *AuthHandler) Authenticate(c *gin.Context) {
 
 	tokenString, err := token.SignedString(jwtSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": "Не удалось создать токен"})
+		resp := ErrorResponse{Error: "Не удалось создать токен"}
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 

@@ -21,7 +21,7 @@ func NewMerchHandler(db *gorm.DB) *MerchHandler {
 // @Tags         Merch
 // @Produce      json
 // @Param        item path string true "Название товара"
-// @Success      200 {object} "Успешный ответ."
+// @Success 	 200 {null} nil "Успешный ответ"
 // @Failure      400 {object} ErrorResponse "Неверный запрос."
 // @Failure      401 {object} ErrorResponse "Неавторизован."
 // @Failure      500 {object} ErrorResponse "Внутренняя ошибка сервера."
@@ -104,5 +104,5 @@ func (h *MerchHandler) BuyItem(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Предмет " + item + " успешно куплен"})
+	// c.JSON(http.StatusOK, gin.H{"message": "Предмет " + item + " успешно куплен"})
 }
