@@ -63,7 +63,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 	username, ok := usernameI.(string)
 	if !ok {
 		resp := ErrorResponse{Error: "Пользователь не авторизован"}
-		c.JSON(http.StatusUnauthorized, gin.H{"errors": resp})
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *InfoHandler) GetInfo(c *gin.Context) {
 	var user models.User
 	if err := h.Db.Preload("Purchases.Merch").Where("username = ?", username).First(&user).Error; err != nil {
 		resp := ErrorResponse{Error: "Не удалось найти пользователя"}
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": resp})
+		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
