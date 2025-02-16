@@ -40,8 +40,13 @@ func initDB() (*gorm.DB, error) {
 		return nil, err
 	}
 	// Лишь для того, чтобы при запуске контейнера с новой БД всё работало, как надо. В обычной жизни эти строки не нужны
-	db.Migrator().CreateTable(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
-	db.AutoMigrate(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{})
+	if err := db.Migrator().CreateTable(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{}); err != nil {
+		fmt.Printf("Ошибка при создании таблиц: %v", err)
+	}
+
+	if err := db.AutoMigrate(models.Merch{}, models.Purchase{}, models.Transaction{}, models.User{}); err != nil {
+		fmt.Printf("Ошибка при миграции: %v", err)
+	}
 	db.Create(&models.Merch{Name: "t-shirt", Price: 80})
 	db.Create(&models.Merch{Name: "cup", Price: 20})
 	db.Create(&models.Merch{Name: "book", Price: 50})
